@@ -1,6 +1,7 @@
 "use client";
 
-// Stage 10: THE KEY — combine signal + decoded = "signal-decoded"
+// Stage 11: THE KEY — first letters of the Stage 1-6 answers (mirror, index, static,
+// unlock, node, anchor) -> m i s u n a, grouped 3-1-2 -> "mis-u-na"
 
 import ChallengeFrame from "@/components/ChallengeFrame";
 
@@ -47,7 +48,7 @@ function FinalContent() {
         </div>
         <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, maxWidth: "480px", margin: "0 auto" }}>
           Every investigation ends with a conclusion. NULL left one final lock on the archive.
-          The key is made of everything you&apos;ve discovered — two fragments, combined into one truth.
+          The key is made of everything you&apos;ve discovered — six fragments, combined into one truth.
         </p>
       </div>
 
@@ -62,20 +63,19 @@ function FinalContent() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <FragmentCard
-            stage="STAGE 04 — THE SIGNAL"
-            hint="The decoded Base64 message told you what was your key. What was the last word of that decoded message?"
+            stage="STAGES 01 · 02 · 03"
+            hint="Take the first letter of the word you submitted in each of the first three stages, in order. These form the first group."
             color="var(--accent-cyan)"
           />
-          <div
-            className="mono"
-            style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.9rem" }}
-          >
-            +
-          </div>
           <FragmentCard
-            stage="STAGE 09 — THE CIPHER"
-            hint="The ROT13 message revealed a password word. What was it? (the word after 'THE PASSWORD IS:')"
+            stage="STAGE 04 — THE SIGNAL"
+            hint="Take the first letter of the word you submitted here. It stands alone as the second group."
             color="var(--accent-purple)"
+          />
+          <FragmentCard
+            stage="STAGES 05 · 06"
+            hint="Take the first letter of the word you submitted in each of these two stages, in order. These form the last group."
+            color="var(--accent-amber)"
           />
         </div>
       </div>
@@ -92,9 +92,9 @@ function FinalContent() {
       >
         <div style={{ color: "var(--text-muted)", marginBottom: "8px" }}>// Key format:</div>
         <div style={{ color: "var(--text-secondary)" }}>
-          [stage-4-word]<span style={{ color: "var(--accent-amber)" }}>-</span>[stage-9-word]
+          [3 letters]<span style={{ color: "var(--accent-amber)" }}>-</span>[1 letter]<span style={{ color: "var(--accent-amber)" }}>-</span>[2 letters]
         </div>
-        <div style={{ color: "var(--text-muted)", marginTop: "8px", fontSize: "0.75rem" }}>// Example: word1-word2 (all lowercase, no spaces)</div>
+        <div style={{ color: "var(--text-muted)", marginTop: "8px", fontSize: "0.75rem" }}>// All lowercase, hyphens between the groups, no spaces</div>
       </div>
 
       <div
