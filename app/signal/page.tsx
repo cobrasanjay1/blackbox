@@ -2,15 +2,16 @@
 
 // Stage 4: THE SIGNAL — Base64 decode
 // Stage 5: THE PARAMETER — URL query parameter manipulation
-// The encoded string decodes to: "The parameter is your key."
-// Then player must change ?file=missing to ?file=recovered
+// The encoded string decodes to: "Unlock the next door. Ask the server for a file named node."
+// Stage 4 answer: unlock (first word). Then the player must change ?file=missing to ?file=node (Stage 5 answer: node)
 
 import ChallengeFrame from "@/components/ChallengeFrame";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-const ENCODED_MESSAGE = "VGhlIHBhcmFtZXRlciBpcyB5b3VyIGtleS4=";
-// Decoded: "The parameter is your key."
+const ENCODED_MESSAGE =
+  "VW5sb2NrIHRoZSBuZXh0IGRvb3IuIEFzayB0aGUgc2VydmVyIGZvciBhIGZpbGUgbmFtZWQgbm9kZS4=";
+// Decoded: "Unlock the next door. Ask the server for a file named node."
 
 function SignalContent() {
   const searchParams = useSearchParams();
@@ -125,10 +126,10 @@ function SignalContent() {
                   color: "var(--accent-green)",
                 }}
               >
-                DECODED: &quot;The parameter is your key.&quot;
+                DECODED: &quot;Unlock the next door. Ask the server for a file named node.&quot;
                 <br />
                 <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                  Now submit the last word of this message.
+                  Now submit the first word of this message.
                 </span>
               </div>
             )}
@@ -160,7 +161,7 @@ function SignalContent() {
               <span style={{ color: "var(--text-muted)" }}>🔒</span>
               <span style={{ color: "var(--text-muted)" }}>
                 /signal<span style={{ color: "var(--accent-amber)" }}>?file=</span>
-                <span style={{ color: fileParam === "recovered" ? "var(--accent-green)" : "var(--accent-red)" }}>
+                <span style={{ color: fileParam === "node" ? "var(--accent-green)" : "var(--accent-red)" }}>
                   {fileParam || "missing"}
                 </span>
               </span>
