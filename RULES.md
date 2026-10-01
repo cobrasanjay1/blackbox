@@ -18,7 +18,7 @@ Each stage teaches you a real-world cybersecurity concept through hands-on disco
 | Detail               | Info                                         |
 | -------------------- | -------------------------------------------- |
 | **Type**             | Team-based web puzzle / digital investigation |
-| **Total Stages**     | 10 progressive challenges                    |
+| **Total Stages**     | 11 progressive challenges                    |
 | **Time Limit**       | 1 hour 30 minutes                            |
 | **Difficulty**       | Beginner-friendly → Intermediate             |
 | **Requires**         | A laptop with a modern browser (Chrome recommended) |
@@ -62,7 +62,7 @@ Each stage teaches you a real-world cybersecurity concept through hands-on disco
 - Your progress is saved automatically — you can refresh without losing anything
 
 ### Winning
-- The first team to **complete all 10 stages** wins
+- The first team to **complete all 11 stages** wins
 - Final rankings are based on **completion time**
 - A live **leaderboard** shows all teams' progress in real time
 
