@@ -136,7 +136,7 @@ By the end of the game, you'll have hands-on experience with:
 
 ## 🏆 Prizes & Recognition
 
-- 🥇 **1st Place** — The team that completes all 10 stages in the shortest time
+- 🥇 **1st Place** — The team that completes all 11 stages in the shortest time
 - 🥈 **2nd Place** — Runner-up by completion time
 - 🥉 **3rd Place** — Second runner-up
 - All participants receive recognition for completing the investigation
