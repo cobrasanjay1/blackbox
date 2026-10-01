@@ -128,6 +128,7 @@ function getStageUrl(challengeId: string): string {
     "the-script": "/trace",
     "the-image": "/vault/gate",
     "the-cipher": "/vault",
+    "the-cookie": "/cookie",
     "the-key": "/vault/final",
   };
   return stageRoutes[challengeId] ?? "/";
