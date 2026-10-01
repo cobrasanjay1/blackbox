@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-// CLUE_01: You're already looking in the right place.
-// The archive is waiting. Try visiting /archive
+// CLUE_01 lives in the rendered HTML (see the <!-- --> comment injected below),
+// so players can find it with "View Page Source".
+const CLUE_01_COMMENT =
+  "<!-- CLUE_01: You're already looking in the right place. This page is only a reflection of the real one. The word you need is: mirror. The archive is waiting. -->";
 
 export default function HomePage() {
   const [teamName, setTeamName] = useState("");
@@ -96,6 +98,8 @@ export default function HomePage() {
           "radial-gradient(ellipse at 50% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(124, 58, 237, 0.08) 0%, transparent 50%)",
       }}
     >
+      {/* Stage 1 clue: a real HTML comment, visible via "View Page Source" */}
+      <div hidden aria-hidden="true" dangerouslySetInnerHTML={{ __html: CLUE_01_COMMENT }} />
       {/* Corner decorations */}
       <CornerDecor />
 
