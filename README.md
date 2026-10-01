@@ -94,7 +94,10 @@ Features:
 
 ---
 
-## The 10 Challenges
+## The 11 Challenges
+
+Stages 1-6 are the **letter stages**: the first letter of each answer spells the final key.
+Stages 7-10 are extra challenges whose answers do **not** feed the key.
 
 | Stage | Title | Mechanic |
 |---|---|---|
@@ -107,7 +110,8 @@ Features:
 | 7 | THE SCRIPT | JS variable in browser console |
 | 8 | THE IMAGE | Image EXIF metadata |
 | 9 | THE CIPHER | ROT13 cipher |
-| 10 | THE KEY | Combine fragments from stages 4 + 9 |
+| 10 | THE COOKIE | Cookie clue via DevTools |
+| 11 | THE KEY | First letters of stages 1-6, grouped 3-1-2 |
 
 ---
 
@@ -117,16 +121,17 @@ Features:
 
 | Stage | Answer |
 |---|---|
-| the-message | `archive` |
-| the-archive | `signal` |
-| the-source | `decoded` |
-| the-signal | `parameter` |
-| the-parameter | `recovered` |
-| the-memory | `the_trace` |
+| the-message | `mirror` |
+| the-archive | `index` |
+| the-source | `static` |
+| the-signal | `unlock` |
+| the-parameter | `node` |
+| the-memory | `anchor` |
 | the-script | `vault` |
 | the-image | `cipher` |
 | the-cipher | `signal` |
-| the-key | `signal-decoded` |
+| the-cookie | `ember` |
+| the-key | `mis-u-na` |
 
 Answers are validated server-side only. They are never sent to the browser.
 
@@ -190,7 +195,8 @@ app/
 ├── trace/page.tsx        # Stages 6, 7
 ├── vault/gate/page.tsx   # Stage 8
 ├── vault/page.tsx        # Stage 9
-├── vault/final/page.tsx  # Stage 10
+├── cookie/page.tsx       # Stage 10
+├── vault/final/page.tsx  # Stage 11
 ├── victory/page.tsx      # Victory screen
 ├── leaderboard/page.tsx  # Public leaderboard
 ├── admin/page.tsx        # Admin dashboard
@@ -242,3 +248,22 @@ Built for **Black Box Association** cybersecurity events.
 Theme: THE LOST FILE — a digital mystery game for curious minds.
 
 > "You didn't hack the system. You simply learned how to look at it."
+
+
+**How the final key works:** the first letters of stages 1-6 (m, i, s, u, n, a) are grouped 3-1-2, giving `mis-u-na`.
+
+**Where each clue lives:**
+
+| Stage | Where the player finds the answer |
+|---|---|
+| 1 | HTML comment in the homepage source (`app/page.tsx`) |
+| 2 | Hidden text on `/archive` (`index`) |
+| 3 | JS comment on `/archive` (`static`) |
+| 4 | Base64 string on `/signal`; decoded message starts with "Unlock" |
+| 5 | `/signal?file=node` (the decoded message names the file) |
+| 6 | localStorage key `null_message` on `/trace` |
+| 7 | `next_clue` variable in the console on `/trace` |
+| 8 | EXIF comment in `public/images/null_archive_photo.jpg` |
+| 9 | ROT13 text on `/vault` (`FVTANY`) |
+| 10 | Cookie named `relic` on `/cookie` |
+| 11 | Combine the first letters of stages 1-6 on `/vault/final` |
