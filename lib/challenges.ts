@@ -73,6 +73,7 @@ export const CHALLENGES: Challenge[] = [
       "The string uses only letters, numbers, and sometimes = at the end. This is a pattern.",
       "This type of encoding is called Base64. It's used to represent data as text.",
       "Search for 'Base64 decode' online. Paste the string into any decoder to read the message.",
+      "Once decoded, submit the first word of the message.",
     ],
   },
   {
@@ -87,7 +88,7 @@ export const CHALLENGES: Challenge[] = [
     hints: [
       "Look at the URL in your browser. It contains ?file=something.",
       "Try changing the value after 'file=' in the URL and pressing Enter.",
-      "What if the file was never missing? Try ?file=recovered in the URL bar.",
+      "Did the decoded message tell you what the file is called? Try ?file=node in the URL bar.",
     ],
   },
   {
@@ -151,18 +152,33 @@ export const CHALLENGES: Challenge[] = [
     ],
   },
   {
-    id: "the-key",
+    id: "the-cookie",
     order: 10,
+    title: "THE COOKIE",
+    storyFragment:
+      "NULL left a trail of crumbs — small, quiet, and easy to overlook. Browsers hold on to some of them for a very long time.",
+    description:
+      "The vault is open, but something is still stored on your machine for this site. Not in local storage this time — in the other kind of browser memory. Find the cookie NULL left behind.",
+    mechanic: "cookie",
+    hints: [
+      "Open DevTools (F12) and go to the 'Application' tab (Chrome) or 'Storage' tab (Firefox).",
+      "Expand 'Cookies' (not Local Storage) and select this site's URL.",
+      "Look for a cookie named 'relic'. Its value is the answer.",
+    ],
+  },
+  {
+    id: "the-key",
+    order: 11,
     title: "THE KEY",
     storyFragment:
-      "Every investigation ends with a conclusion. NULL left one final lock. The key is made of everything you've discovered — two fragments, combined into one truth.",
+      "Every investigation ends with a conclusion. NULL left one final lock. The key is made of everything you've discovered — six fragments, combined into one truth.",
     description:
-      "You've collected all the fragments. The vault's final lock requires a combination of two things you discovered earlier. Think back: what did you decode in Stage 4, and what did you uncover in Stage 9?",
+      "You've collected all the fragments. The vault's final lock is built from the answers you submitted in Stages 1 through 6. Take the first letter of each, in order, and combine them. Stages 7 to 10 were detours — they are not part of the key.",
     mechanic: "combination",
     hints: [
-      "Think back to the message you decoded in 'THE SIGNAL' (Stage 4). What was the last word?",
-      "Combine it with the key word from 'THE CIPHER' (Stage 9). Separate them with a dash: word1-word2.",
-      "Format: [decoded-word]-[cipher-word] — all lowercase, no spaces.",
+      "Look back at the six words you submitted in Stages 1–6. Write down only the first letter of each, in order.",
+      "Group the letters 3 - 1 - 2: the first three letters, then the fourth on its own, then the last two.",
+      "Format: xxx-x-xx — all lowercase, hyphens between the groups, no spaces.",
     ],
   },
 ];
