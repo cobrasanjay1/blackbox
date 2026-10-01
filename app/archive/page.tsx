@@ -2,7 +2,7 @@
 
 // Stage 1: THE MESSAGE — players discover the page from the HTML comment on homepage
 // Stage 2: THE ARCHIVE — hidden text (white on white / invisible span)
-// Stage 3: THE SOURCE — JS comment in source revealing /signal
+// Stage 3: THE SOURCE — JS comment in source revealing "static" and /signal
 
 import ChallengeFrame from "@/components/ChallengeFrame";
 import { useEffect, useState } from "react";
@@ -97,7 +97,7 @@ function ArchiveContent({ stage }: { stage: string }) {
           <p>FILE: transmission_alpha.enc — <span style={{ color: "var(--accent-amber)" }}>ENCRYPTED</span></p>
           <p>FILE: _______.________ — 
             {/* Hidden text — same color as background. Try selecting all text! */}
-            <span style={{ color: "#050810", userSelect: "text" }} aria-hidden="true">signal</span>
+            <span style={{ color: "#050810", userSelect: "text" }} aria-hidden="true">index</span>
             <span style={{ color: "var(--text-muted)" }}> [REDACTED]</span>
           </p>
         </div>
@@ -171,7 +171,7 @@ function ArchiveContent({ stage }: { stage: string }) {
         dangerouslySetInnerHTML={{
           __html: `
 // NULL left a message encoded in the signal
-// The next destination: decoded
+// The page is quiet. Nothing moves. The word you need is: static
 // Hint: try visiting /signal for the encoded transmission
 `,
         }}
