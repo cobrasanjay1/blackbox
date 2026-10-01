@@ -167,7 +167,7 @@ function SignalContent() {
               </span>
             </div>
 
-            {fileParam === "recovered" ? (
+            {fileParam === "node" ? (
               <div>
                 <div
                   style={{
