@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TOTAL_CHALLENGES } from "@/lib/challenges";
 
 interface TeamData {
   name: string;
@@ -178,7 +179,7 @@ export default function VictoryPage() {
             <StatRow label="TEAM" value={teamName} color="var(--text-primary)" />
             <StatRow
               label="STATUS"
-              value="ALL 10 STAGES CLEARED"
+              value={`ALL ${TOTAL_CHALLENGES} STAGES CLEARED`}
               color="var(--accent-green)"
             />
           </div>
