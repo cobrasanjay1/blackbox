@@ -25,10 +25,10 @@ export default function TracePage() {
     document.cookie = "clue=look_deeper; path=/; SameSite=Strict";
 
     // Set localStorage clue
-    localStorage.setItem("null_message", "the_trace");
+    localStorage.setItem("null_message", "anchor");
     localStorage.setItem(
       "_null_note",
-      "The trace you're looking for is right here. Key: null_message"
+      "The anchor holds everything in place. Key: null_message"
     );
 
     fetch("/api/team", { headers: { "x-team-token": token } })
