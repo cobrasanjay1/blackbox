@@ -18,6 +18,7 @@ export default function HomePage() {
   const [needsCode, setNeedsCode] = useState(false);
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [resumeName, setResumeName] = useState<string | null>(null);
   const [titleText, setTitleText] = useState("");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,12 +36,12 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Resume if a team session already exists
+  // Existing session on this device? Offer to continue instead of forcing it.
   useEffect(() => {
     fetchTeam(1).then((r) => {
-      if (r.status === "ok") router.replace("/game");
+      if (r.status === "ok") setResumeName(r.team.name);
     });
-  }, [router]);
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,6 +223,22 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Continue an existing session on this device */}
+        {resumeName && !issuedCode && (
+          <div className="card card-glow animate-fade-in" style={{ marginBottom: "24px" }}>
+            <div className="mono" style={{ color: "var(--accent-cyan)", fontSize: "0.65rem", letterSpacing: "0.2em", marginBottom: "16px" }}>
+              SESSION FOUND
+            </div>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
+              Continue as <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{resumeName}</span>?
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+              <button type="button" className="btn-primary" onClick={() => router.push("/game")}>[ CONTINUE ]</button>
+              <button type="button" className="btn-ghost" onClick={() => setResumeName(null)}>[ USE A DIFFERENT TEAM ]</button>
+            </div>
+          </div>
+        )}
+
         {/* One-time team code after registering */}
         {issuedCode && (
           <div className="card card-glow animate-fade-in" style={{ marginBottom: "24px" }}>
@@ -241,7 +258,7 @@ export default function HomePage() {
           </div>
         )}
         {/* Team Registration */}
-        {!issuedCode && (
+        {!issuedCode && !resumeName && (
         <div className="card animate-fade-in" style={{ animationDelay: "0.3s" }}>
           <div
             className="mono"
@@ -302,7 +319,7 @@ export default function HomePage() {
                   pattern="\d{6}"
                   className="input-cyber"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/D/g, "").slice(0, 6))}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   placeholder="000000"
                   maxLength={6}
                   disabled={loading}
