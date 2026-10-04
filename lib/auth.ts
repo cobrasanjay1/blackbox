@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export function getAdminToken(req: NextRequest): string | null {
   return req.headers.get("x-admin-token");
@@ -16,4 +16,15 @@ export function getTeamToken(req: NextRequest): string | null {
     req.cookies.get("team_token")?.value ||
     null
   );
+}
+
+export function setTeamCookie(res: NextResponse, token: string): NextResponse {
+  res.cookies.set("team_token", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  return res;
 }
