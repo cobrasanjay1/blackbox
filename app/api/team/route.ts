@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       token: team.token,
       code: team.code,
       message: "Team registered. The investigation begins.",
-    }), team.token);
+    }), team.token, req);
   } catch (error) {
     console.error("[team/POST]", error);
     return NextResponse.json({ error: "Failed to register team" }, { status: 500 });
@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
       include: { progress: { orderBy: { completedAt: "asc" } }, hintUsages: true },
     });
     if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const completedIds = team.progress.map((p: any) => p.challengeId);
     const hintMap: Record<string, number[]> = {};
     for (const h of team.hintUsages) {
