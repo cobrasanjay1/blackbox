@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchTeam } from "@/lib/teamClient";
 import { TOTAL_CHALLENGES } from "@/lib/challenges";
 
 interface TeamData {
@@ -28,45 +29,16 @@ export default function VictoryPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Generate particles client-side to avoid hydration mismatch
-    setParticles(
-      Array.from({ length: 20 }, (_, i) => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        delay: Math.random() * 3,
-      }))
-    );
-  }, []);
-
-  useEffect(() => {
-    const getToken = () => {
-      const cookie = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith("team_token="))
-        ?.split("=")[1];
-      return cookie || localStorage.getItem("team_token") || "";
-    };
-
-    const token = getToken();
-    if (!token) {
-      router.push("/");
-      return;
-    }
-
-    fetch("/api/team", { headers: { "x-team-token": token } })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.id) {
+    fetchTeam()
+      .then((r) => {
+        if (r.status === "unauth") {
           router.push("/");
           return;
         }
-
-        setTeam({
-          name: data.name,
-          completedAt: data.completedAt,
-        });
+        if (r.status === "ok") {
+          setTeam({ name: r.team.name, completedAt: r.team.completedAt ?? null });
+        }
       })
-      .catch(() => router.push("/"))
       .finally(() => setLoading(false));
   }, [router]);
 
