@@ -1,90 +1,59 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchTeam } from "@/lib/teamClient";
+import { TOTAL_CHALLENGES } from "@/lib/challenges";
 
-// CLUE_01: You're already looking in the right place.
-// The archive is waiting. Try visiting /archive
+interface TeamData {
+  name: string;
+  completedAt: string | null;
+  startedAt?: string;
+  durationSeconds?: number;
+}
 
-export default function HomePage() {
-  const [teamName, setTeamName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [phase, setPhase] = useState<"intro" | "register">("intro");
-  const [titleText, setTitleText] = useState("");
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${mins.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`;
+  }
+  return `${mins.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`;
+}
+
+export default function VictoryPage() {
+  const [team, setTeam] = useState<TeamData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [particles, setParticles] = useState<{ x: number; y: number; delay: number }[]>([]);
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const fullTitle = "THE LOST FILE";
-
-  // Typewriter effect for title
   useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setTitleText(fullTitle.slice(0, i + 1));
-      i++;
-      if (i >= fullTitle.length) clearInterval(interval);
-    }, 80);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Check if team already exists
-  useEffect(() => {
-    const savedToken = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("team_token="))
-      ?.split("=")[1];
-
-    if (savedToken) {
-      fetch("/api/team", {
-        headers: { "x-team-token": savedToken },
+    fetchTeam()
+      .then((r) => {
+        if (r.status === "unauth") {
+          router.push("/");
+          return;
+        }
+        if (r.status === "ok") {
+          setTeam({ name: r.team.name, completedAt: r.team.completedAt ?? null });
+        }
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.id) {
-            router.push("/game");
-          }
-        })
-        .catch(() => {});
-    }
+      .finally(() => setLoading(false));
   }, [router]);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!teamName.trim()) return;
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="mono" style={{ color: "var(--accent-green)" }}>DECRYPTING FINAL RESULT...</div>
+      </div>
+    );
+  }
 
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/team", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: teamName.trim() }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Failed to register team");
-        return;
-      }
-
-      // Store token in localStorage as backup
-      localStorage.setItem("team_token", data.token);
-      localStorage.setItem("team_name", data.name);
-      // Cookie is set server-side
-
-      router.push("/game");
-    } catch {
-      setError("Connection failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const teamName = team?.name || localStorage.getItem("team_name") || "Unknown Team";
 
   return (
-    <main
+    <div
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -92,271 +61,238 @@ export default function HomePage() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        position: "relative",
         background:
-          "radial-gradient(ellipse at 50% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(124, 58, 237, 0.08) 0%, transparent 50%)",
+          "radial-gradient(ellipse at 50% 50%, rgba(0, 255, 135, 0.08) 0%, transparent 60%)",
+        overflow: "hidden",
       }}
     >
-      {/* Corner decorations */}
-      <CornerDecor />
-
-      <div style={{ maxWidth: "640px", width: "100%", textAlign: "center" }}>
-        {/* Association tag */}
+      {/* Ambient particles */}
+      {particles.map((p, i) => (
         <div
-          className="mono"
+          key={i}
           style={{
-            color: "var(--text-muted)",
+            position: "fixed",
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: "2px",
+            height: "2px",
+            borderRadius: "50%",
+            background: "var(--accent-green)",
+            opacity: 0.4,
+            animation: `pulse-glow ${2 + p.delay}s ${p.delay}s infinite`,
+          }}
+        />
+      ))}
+
+      <div style={{ maxWidth: "600px", width: "100%", textAlign: "center" }}>
+        {/* Status badge */}
+        <div
+          className="mono animate-fade-in"
+          style={{
+            color: "var(--accent-green)",
             fontSize: "0.7rem",
             letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            marginBottom: "40px",
-            opacity: 0.8,
+            marginBottom: "24px",
+            padding: "8px 20px",
+            border: "1px solid rgba(0, 255, 135, 0.3)",
+            display: "inline-block",
+            background: "rgba(0, 255, 135, 0.06)",
+            animation: "pulse-glow 3s infinite",
           }}
         >
-          BLACK BOX ASSOCIATION · INVESTIGATION SYSTEM v1.0
+          ✓ ACCESS GRANTED
         </div>
 
-        {/* Main title with glitch */}
-        <div style={{ marginBottom: "12px", position: "relative" }}>
-          <div
-            className="glitch-text"
-            style={{
-              fontSize: "clamp(2.5rem, 8vw, 5rem)",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              fontFamily: "'JetBrains Mono', monospace",
-              color: "var(--text-primary)",
-              lineHeight: 1,
-            }}
-          >
-            {titleText}
-            {titleText.length < fullTitle.length && (
-              <span style={{ color: "var(--accent-cyan)", animation: "typing-cursor 1s infinite" }}>█</span>
-            )}
-          </div>
-        </div>
+        {/* Main title */}
+        <h1
+          className="animate-fade-in"
+          style={{
+            fontSize: "clamp(2rem, 6vw, 3.5rem)",
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: "0.06em",
+            color: "var(--text-primary)",
+            marginBottom: "12px",
+            animationDelay: "0.2s",
+          }}
+        >
+          THE FILE HAS BEEN
+          <br />
+          <span style={{ color: "var(--accent-green)" }}>RECOVERED</span>
+        </h1>
 
-        {/* Subtitle */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "16px",
-            marginBottom: "48px",
+            height: "2px",
+            background: "linear-gradient(90deg, transparent, var(--accent-green), transparent)",
+            margin: "24px 0",
+          }}
+        />
+
+        {/* Team stats */}
+        <div
+          className="card animate-fade-in"
+          style={{
+            marginBottom: "24px",
+            borderColor: "rgba(0, 255, 135, 0.2)",
+            background: "rgba(0, 255, 135, 0.03)",
+            animationDelay: "0.4s",
           }}
         >
-          <div style={{ height: "1px", width: "60px", background: "linear-gradient(90deg, transparent, var(--border-dim))" }} />
-          <span
+          <div
             className="mono"
-            style={{ color: "var(--accent-cyan)", fontSize: "0.7rem", letterSpacing: "0.2em" }}
+            style={{ color: "var(--text-muted)", fontSize: "0.6rem", letterSpacing: "0.2em", marginBottom: "16px" }}
           >
-            DIGITAL INVESTIGATION
-          </span>
-          <div style={{ height: "1px", width: "60px", background: "linear-gradient(90deg, var(--border-dim), transparent)" }} />
+            INVESTIGATION COMPLETE
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <StatRow label="TEAM" value={teamName} color="var(--text-primary)" />
+            <StatRow
+              label="STATUS"
+              value={`ALL ${TOTAL_CHALLENGES} STAGES CLEARED`}
+              color="var(--accent-green)"
+            />
+          </div>
         </div>
 
-        {/* Story text */}
+        {/* The message */}
         <div
-          className="card card-glow animate-fade-in"
-          style={{ marginBottom: "32px", textAlign: "left" }}
+          className="card animate-fade-in"
+          style={{
+            marginBottom: "32px",
+            animationDelay: "0.6s",
+            borderLeft: "2px solid var(--accent-cyan)",
+          }}
         >
-          {/* Incident log header */}
-          <div
-            className="mono"
+          <p
             style={{
-              color: "var(--accent-red)",
-              fontSize: "0.65rem",
-              letterSpacing: "0.2em",
-              marginBottom: "16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
+              color: "var(--text-secondary)",
+              lineHeight: 2,
+              fontStyle: "italic",
+              fontSize: "1rem",
             }}
           >
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent-red)", display: "inline-block", animation: "pulse-glow 2s infinite" }} />
-            INCIDENT LOG · 02:13:47 AM
-          </div>
-
-          <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: "16px" }}>
-            At 02:13 AM, someone accessed the{" "}
-            <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-              Black Box Association Archive
-            </span>
-            . One file disappeared. The only thing left behind was this website.
-          </p>
-
-          <p style={{ color: "var(--text-secondary)", lineHeight: 1.8, marginBottom: "16px" }}>
-            The entity known only as{" "}
-            <span className="mono" style={{ color: "var(--accent-cyan)" }}>NULL</span>{" "}
-            left a trail. Nobody knows whether it's an invitation, a warning, or a trap.
-          </p>
-
-          <p style={{ color: "var(--text-primary)", lineHeight: 1.8, fontStyle: "italic" }}>
-            "If you're reading this... perhaps the file wasn't deleted. Perhaps it was{" "}
-            <span style={{ color: "var(--accent-purple)" }}>hidden</span>."
-          </p>
-
-          <div
-            style={{
-              marginTop: "20px",
-              paddingTop: "16px",
-              borderTop: "1px solid var(--border-dim)",
-              color: "var(--accent-green)",
-              fontSize: "0.8rem",
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-          >
-            ✓ No cybersecurity experience required.
+            "You didn&apos;t hack the system.
             <br />
-            ✓ Everything you need is somewhere on this website.
-          </div>
-        </div>
-
-        {/* Team Registration */}
-        <div className="card animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            You simply learned how to{" "}
+            <span style={{ color: "var(--text-primary)", fontStyle: "normal", fontWeight: 600 }}>
+              look at it
+            </span>
+            ."
+          </p>
           <div
             className="mono"
             style={{
               color: "var(--text-muted)",
-              fontSize: "0.65rem",
-              letterSpacing: "0.2em",
-              marginBottom: "20px",
+              fontSize: "0.75rem",
+              marginTop: "12px",
             }}
           >
-            TEAM REGISTRATION
+            — NULL
           </div>
-
-          <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div>
-              <label
-                htmlFor="teamName"
-                className="mono"
-                style={{
-                  display: "block",
-                  color: "var(--text-secondary)",
-                  fontSize: "0.75rem",
-                  marginBottom: "8px",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                TEAM NAME
-              </label>
-              <input
-                id="teamName"
-                ref={inputRef}
-                type="text"
-                className="input-cyber"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="Enter your team name..."
-                maxLength={50}
-                disabled={loading}
-                autoComplete="off"
-                style={{ fontSize: "1rem" }}
-              />
-            </div>
-
-            {error && (
-              <div
-                className="mono"
-                style={{
-                  color: "var(--accent-red)",
-                  fontSize: "0.8rem",
-                  padding: "8px 12px",
-                  background: "rgba(255, 71, 87, 0.08)",
-                  border: "1px solid rgba(255, 71, 87, 0.2)",
-                }}
-              >
-                ✕ {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading || !teamName.trim()}
-              style={{
-                marginTop: "8px",
-                opacity: loading || !teamName.trim() ? 0.6 : 1,
-              }}
-            >
-              {loading ? "CONNECTING..." : "[ BEGIN INVESTIGATION ]"}
-            </button>
-          </form>
         </div>
 
-        {/* Leaderboard link */}
-        <div style={{ marginTop: "24px" }}>
+        {/* What you learned */}
+        <div className="card animate-fade-in" style={{ marginBottom: "32px", animationDelay: "0.8s", textAlign: "left" }}>
+          <div className="mono" style={{ color: "var(--text-muted)", fontSize: "0.6rem", letterSpacing: "0.2em", marginBottom: "14px" }}>
+            SKILLS ACQUIRED
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+            {[
+              "HTML Comments",
+              "Hidden Text",
+              "Page Source",
+              "Base64 Encoding",
+              "URL Parameters",
+              "Cookies & Local Storage",
+              "JavaScript Console",
+              "File Metadata",
+              "Caesar Cipher",
+              "Investigative Thinking",
+            ].map((skill) => (
+              <div
+                key={skill}
+                className="mono"
+                style={{
+                  fontSize: "0.7rem",
+                  color: "var(--accent-green)",
+                  padding: "6px 10px",
+                  background: "rgba(0, 255, 135, 0.06)",
+                  border: "1px solid rgba(0, 255, 135, 0.15)",
+                }}
+              >
+                ✓ {skill}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div
+          className="animate-fade-in"
+          style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", animationDelay: "1s" }}
+        >
           <a
             href="/leaderboard"
-            className="mono"
-            style={{
-              color: "var(--text-muted)",
-              fontSize: "0.7rem",
-              letterSpacing: "0.15em",
-              textDecoration: "none",
-              transition: "color 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--accent-cyan)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+            className="btn-primary"
+            style={{ textDecoration: "none", display: "inline-block" }}
           >
-            VIEW LEADERBOARD →
+            [ VIEW LEADERBOARD ]
+          </a>
+          <a
+            href="/"
+            className="btn-ghost"
+            style={{ textDecoration: "none", display: "inline-block" }}
+          >
+            START OVER
           </a>
         </div>
 
-        {/* Footer */}
         <div
-          className="mono"
+          className="mono animate-fade-in"
           style={{
             marginTop: "48px",
             color: "var(--text-muted)",
             fontSize: "0.6rem",
             letterSpacing: "0.2em",
             opacity: 0.5,
+            animationDelay: "1.2s",
           }}
         >
-          BLACK BOX ASSOCIATION · CYBERSECURITY EVENT · {new Date().getFullYear()}
+          BLACK BOX ASSOCIATION · INVESTIGATION SYSTEM · CASE CLOSED
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
-function CornerDecor() {
-  const style = {
-    position: "fixed" as const,
-    width: "80px",
-    height: "80px",
-    opacity: 0.3,
-  };
-
-  const lineStyle = {
-    position: "absolute" as const,
-    background: "var(--accent-cyan)",
-  };
-
+function StatRow({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) {
   return (
-    <>
-      {/* Top left */}
-      <div style={{ ...style, top: 20, left: 20 }}>
-        <div style={{ ...lineStyle, top: 0, left: 0, width: "30px", height: "1px" }} />
-        <div style={{ ...lineStyle, top: 0, left: 0, width: "1px", height: "30px" }} />
-      </div>
-      {/* Top right */}
-      <div style={{ ...style, top: 20, right: 20 }}>
-        <div style={{ ...lineStyle, top: 0, right: 0, width: "30px", height: "1px" }} />
-        <div style={{ ...lineStyle, top: 0, right: 0, width: "1px", height: "30px" }} />
-      </div>
-      {/* Bottom left */}
-      <div style={{ ...style, bottom: 20, left: 20 }}>
-        <div style={{ ...lineStyle, bottom: 0, left: 0, width: "30px", height: "1px" }} />
-        <div style={{ ...lineStyle, bottom: 0, left: 0, width: "1px", height: "30px" }} />
-      </div>
-      {/* Bottom right */}
-      <div style={{ ...style, bottom: 20, right: 20 }}>
-        <div style={{ ...lineStyle, bottom: 0, right: 0, width: "30px", height: "1px" }} />
-        <div style={{ ...lineStyle, bottom: 0, right: 0, width: "1px", height: "30px" }} />
-      </div>
-    </>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "8px 0",
+        borderBottom: "1px solid var(--border-dim)",
+      }}
+    >
+      <span className="mono" style={{ color: "var(--text-muted)", fontSize: "0.7rem", letterSpacing: "0.1em" }}>
+        {label}
+      </span>
+      <span className="mono" style={{ color, fontSize: "0.85rem", fontWeight: 600 }}>
+        {value}
+      </span>
+    </div>
   );
 }
