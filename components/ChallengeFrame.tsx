@@ -38,7 +38,7 @@ export default function ChallengeFrame({
   const [offline, setOffline] = useState(false);
   const draftKey = `bb_draft_${challengeId}`;
 
-token  const loadTeam = useCallback(async () => {
+  const loadTeam = useCallback(async () => {
     const r = await fetchTeam();
     if (r.status === "unauth") {
       router.push("/");
@@ -93,6 +93,7 @@ token  const loadTeam = useCallback(async () => {
         if (res.correct) {
           setResult({ type: "correct", message: res.message || "CLUE ACCEPTED. The trail continues..." });
           setAlreadyCompleted(true);
+          try { sessionStorage.removeItem(draftKey); } catch {}
           setTimeout(() => {
             const nextChallenge = CHALLENGES.find((c) => c.order === (challenge?.order ?? 0) + 1);
             if (nextChallenge) {
@@ -127,6 +128,7 @@ token  const loadTeam = useCallback(async () => {
       if (data.correct) {
         setResult({ type: "correct", message: "✓ CLUE ACCEPTED — The trail continues..." });
         setAlreadyCompleted(true);
+        try { sessionStorage.removeItem(draftKey); } catch {}
         setTimeout(() => {
           if (data.gameComplete) {
             router.push("/victory");
