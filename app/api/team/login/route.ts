@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { setTeamCookie } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rateLimit";
+import {
+  MAX_FAILS_PER_IP,
+  MAX_FAILS_PER_NAME,
+  clearFailures,
+  recordFailure,
+  throttleState,
+} from "@/lib/loginThrottle";
 import { codesMatch, nameKeyOf, normalizeName } from "@/lib/teamCode";
 
 export async function POST(req: NextRequest) {
@@ -14,12 +20,17 @@ export async function POST(req: NextRequest) {
     const nameKey = nameKeyOf(sanitized);
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
-    const byName = checkRateLimit(`login:${nameKey}`);
-    const byIp = checkRateLimit(`login-ip:${ip}`);
-    if (!byName.allowed || !byIp.allowed) {
-      const resetAt = Math.max(byName.allowed ? 0 : byName.resetAt, byIp.allowed ? 0 : byIp.resetAt);
+    const nameKeyId = `name:${nameKey}`;
+    const ipKeyId = `ip:${ip}`;
+    const byName = throttleState(nameKeyId, MAX_FAILS_PER_NAME);
+    const byIp = throttleState(ipKeyId, MAX_FAILS_PER_IP);
+    if (byName.blocked || byIp.blocked) {
+      const resetAt = Math.max(byName.resetAt, byIp.resetAt);
       const secs = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
-      return NextResponse.json({ error: `Too many attempts. Try again in ${secs} seconds.` }, { status: 429 });
+      return NextResponse.json(
+        { error: `Too many wrong attempts. Try again in ${Math.ceil(secs / 60)} min.` },
+        { status: 429 }
+      );
     }
 
     const team = await prisma.team.findFirst({
@@ -30,15 +41,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This team has no code yet. Ask an organizer to issue one." }, { status: 403 });
     }
     if (!team || !team.code || !codesMatch(team.code, code.trim())) {
+      recordFailure(nameKeyId);
+      recordFailure(ipKeyId);
       return NextResponse.json({ error: "Invalid team name or code" }, { status: 401 });
     }
 
+    clearFailures(nameKeyId);
     return setTeamCookie(NextResponse.json({
       id: team.id,
       name: team.name,
       token: team.token,
       message: "Welcome back! Resuming your investigation.",
-    }), team.token);
+    }), team.token, req);
   } catch (error) {
     console.error("[team/login/POST]", error);
     return NextResponse.json({ error: "Failed to log in" }, { status: 500 });
