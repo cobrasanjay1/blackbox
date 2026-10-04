@@ -262,11 +262,6 @@ export default function ChallengeFrame({
             {team.name}
           </div>
 
-          {team.code && (
-            <div className="mono" title="Share this code with teammates so they can rejoin" style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.12em" }}>
-              CODE {team.code}
-            </div>
-          )}
         </div>
       </header>
 
