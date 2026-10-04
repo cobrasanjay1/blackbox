@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { fetchTeam } from "@/lib/teamClient";
 
-// CLUE_01: You're already looking in the right place.
-// The archive is waiting. Try visiting /archive
+const CLUE_01_COMMENT =
+  "<!-- CLUE_01: You're already looking in the right place. The archive is waiting. Try visiting /archive -->";
 
 export default function HomePage() {
   const [teamName, setTeamName] = useState("");
@@ -112,7 +112,10 @@ export default function HomePage() {
           "radial-gradient(ellipse at 50% 0%, rgba(0, 212, 255, 0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(124, 58, 237, 0.08) 0%, transparent 50%)",
       }}
     >
-      {/* Corner decorations */}
+      {/* Stage 1 clue: real HTML comment visible in page source */}
+      <div hidden aria-hidden="true" dangerouslySetInnerHTML={{ __html: CLUE_01_COMMENT }} />
+
+      {/* Corner decorations */
       <CornerDecor />
 
       <div style={{ maxWidth: "640px", width: "100%", textAlign: "center" }}>
