@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { fetchTeam } from "@/lib/teamClient";
 
 // CLUE_01 lives in the rendered HTML (see the <!-- --> comment injected below),
 // so players can find it with "View Page Source".
@@ -13,6 +14,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState<"intro" | "register">("intro");
+  const [code, setCode] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [titleText, setTitleText] = useState("");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -30,59 +35,60 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check if team already exists
+  // Resume if a team session already exists
   useEffect(() => {
-    const savedToken = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("team_token="))
-      ?.split("=")[1];
-
-    if (savedToken) {
-      fetch("/api/team", {
-        headers: { "x-team-token": savedToken },
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.id) {
-            router.push("/game");
-          }
-        })
-        .catch(() => {});
-    }
+    fetchTeam(1).then((r) => {
+      if (r.status === "ok") router.replace("/game");
+    });
   }, [router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim()) return;
+    if (needsCode && !/^\d{6}$/.test(code.trim())) {
+      setError("Enter the 6-digit team code");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch("/api/team", {
+      const res = await fetch(needsCode ? "/api/team/login" : "/api/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: teamName.trim() }),
+        body: JSON.stringify(needsCode ? { name: teamName.trim(), code: code.trim() } : { name: teamName.trim() }),
       });
-
       const data = await res.json();
 
+      if (res.status === 409 && data.taken) {
+        setNeedsCode(true);
+        setError(data.error);
+        return;
+      }
       if (!res.ok) {
         setError(data.error || "Failed to register team");
         return;
       }
 
-      // Store token in localStorage as backup
       localStorage.setItem("team_token", data.token);
       localStorage.setItem("team_name", data.name);
-      // Cookie is set server-side
 
+      if (data.code) {
+        setIssuedCode(data.code);
+        return;
+      }
       router.push("/game");
     } catch {
       setError("Connection failed. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const copyCode = async () => {
+    if (!issuedCode) return;
+    try { await navigator.clipboard.writeText(issuedCode); setCopied(true); } catch {}
   };
 
   return (
@@ -216,7 +222,26 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* One-time team code after registering */}
+        {issuedCode && (
+          <div className="card card-glow animate-fade-in" style={{ marginBottom: "24px" }}>
+            <div className="mono" style={{ color: "var(--accent-cyan)", fontSize: "0.65rem", letterSpacing: "0.2em", marginBottom: "16px" }}>
+              TEAM REGISTERED · SAVE YOUR CODE
+            </div>
+            <p style={{ color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: "16px" }}>
+              Use this 6-digit code with your team name to rejoin from another device or after clearing your browser. Share it only with your teammates.
+            </p>
+            <div className="mono" style={{ fontSize: "2.4rem", letterSpacing: "0.4em", color: "var(--text-primary)", marginBottom: "16px" }}>
+              {issuedCode}
+            </div>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button type="button" className="btn-ghost" onClick={copyCode}>{copied ? "[ COPIED ]" : "[ COPY CODE ]"}</button>
+              <button type="button" className="btn-primary" onClick={() => router.push("/game")}>[ CONTINUE ]</button>
+            </div>
+          </div>
+        )}
         {/* Team Registration */}
+        {!issuedCode && (
         <div className="card animate-fade-in" style={{ animationDelay: "0.3s" }}>
           <div
             className="mono"
@@ -251,7 +276,12 @@ export default function HomePage() {
                 type="text"
                 className="input-cyber"
                 value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
+                onChange={(e) => {
+                  setTeamName(e.target.value);
+                  setNeedsCode(false);
+                  setCode("");
+                  setError("");
+                }}
                 placeholder="Enter your team name..."
                 maxLength={50}
                 disabled={loading}
@@ -259,6 +289,29 @@ export default function HomePage() {
                 style={{ fontSize: "1rem" }}
               />
             </div>
+
+            {needsCode && (
+              <div>
+                <label htmlFor="teamCode" className="mono" style={{ display: "block", color: "var(--text-secondary)", fontSize: "0.75rem", marginBottom: "8px" }}>
+                  TEAM CODE (6 DIGITS)
+                </label>
+                <input
+                  id="teamCode"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  className="input-cyber"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  disabled={loading}
+                  autoComplete="off"
+                  autoFocus
+                  style={{ fontSize: "1.2rem", letterSpacing: "0.4em", textAlign: "center" }}
+                />
+              </div>
+            )}
 
             {error && (
               <div
@@ -278,16 +331,17 @@ export default function HomePage() {
             <button
               type="submit"
               className="btn-primary"
-              disabled={loading || !teamName.trim()}
+              disabled={loading || !teamName.trim() || (needsCode && code.length !== 6)}
               style={{
                 marginTop: "8px",
-                opacity: loading || !teamName.trim() ? 0.6 : 1,
+                opacity: loading || !teamName.trim() || (needsCode && code.length !== 6) ? 0.6 : 1,
               }}
             >
-              {loading ? "CONNECTING..." : "[ BEGIN INVESTIGATION ]"}
+              {loading ? "CONNECTING..." : needsCode ? "[ REJOIN TEAM ]" : "[ BEGIN INVESTIGATION ]"}
             </button>
           </form>
         </div>
+        )}
 
         {/* Leaderboard link */}
         <div style={{ marginTop: "24px" }}>
