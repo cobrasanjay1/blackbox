@@ -18,12 +18,19 @@ export function getTeamToken(req: NextRequest): string | null {
   );
 }
 
-export function setTeamCookie(res: NextResponse, token: string): NextResponse {
+export function setTeamCookie(
+  res: NextResponse,
+  token: string,
+  req: NextRequest
+): NextResponse {
+  const https =
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto")?.split(",")[0].trim() === "https";
   res.cookies.set("team_token", token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: https,
     maxAge: 60 * 60 * 24 * 7,
   });
   return res;
