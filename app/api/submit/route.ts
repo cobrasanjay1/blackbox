@@ -62,8 +62,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark as complete
-    await prisma.progress.create({
-      data: { teamId: team.id, challengeId },
+    // upsert: safe against double-submits / retries after a timeout
+    await prisma.progress.upsert({
+      where: { teamId_challengeId: { teamId: team.id, challengeId } },
+      update: {},
+      create: { teamId: team.id, challengeId },
     });
 
     // Check if this was the last challenge
