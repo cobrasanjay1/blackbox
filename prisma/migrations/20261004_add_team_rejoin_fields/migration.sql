@@ -3,7 +3,7 @@ ALTER TABLE "Team"
   ADD COLUMN IF NOT EXISTS "code" TEXT;
 
 UPDATE "Team"
-SET "nameKey" = lower(regexp_replace(trim("name"), '\\s+', ' ', 'g'))
+SET "nameKey" = lower(regexp_replace(trim("name"), '\s+', ' ', 'g'))
 WHERE "nameKey" IS NULL;
 
 DO $$
