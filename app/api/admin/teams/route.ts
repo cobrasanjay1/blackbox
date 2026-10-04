@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       return {
         id: team.id,
         name: team.name,
+        code: team.code,
         completedChallenges,
         totalChallenges: TOTAL_CHALLENGES,
         isComplete,
