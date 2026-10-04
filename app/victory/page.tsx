@@ -38,34 +38,16 @@ export default function VictoryPage() {
   }, []);
 
   useEffect(() => {
-    const getToken = () => {
-      const cookie = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith("team_token="))
-        ?.split("=")[1];
-      return cookie || localStorage.getItem("team_token") || "";
-    };
-
-    const token = getToken();
-    if (!token) {
-      router.push("/");
-      return;
-    }
-
-    fetch("/api/team", { headers: { "x-team-token": token } })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.id) {
+    fetchTeam()
+      .then((r) => {
+        if (r.status === "unauth") {
           router.push("/");
           return;
         }
-
-        setTeam({
-          name: data.name,
-          completedAt: data.completedAt,
-        });
+        if (r.status === "ok") {
+          setTeam({ name: r.team.name, completedAt: r.team.completedAt ?? null });
+        }
       })
-      .catch(() => router.push("/"))
       .finally(() => setLoading(false));
   }, [router]);
 
