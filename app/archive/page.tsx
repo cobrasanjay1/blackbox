@@ -5,6 +5,7 @@
 // Stage 3: THE SOURCE — JS comment in source revealing "static" and /signal
 
 import ChallengeFrame from "@/components/ChallengeFrame";
+import { fetchTeam } from "@/lib/teamClient";
 import { useEffect, useState } from "react";
 
 // Stage selector based on team progress
@@ -12,20 +13,16 @@ export default function ArchivePage() {
   const [currentStage, setCurrentStage] = useState<string | null>(null);
 
   useEffect(() => {
-    const getToken = () => {
-      const cookie = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith("team_token="))
-        ?.split("=")[1];
-      return cookie || localStorage.getItem("team_token") || "";
-    };
-
-    const token = getToken();
-    if (!token) return;
-
-    fetch("/api/team", { headers: { "x-team-token": token } })
-      .then((r) => r.json())
-      .then((data) => {
+    let cancelled = false;
+    const run = () =>
+      fetchTeam().then((r) => {
+        if (cancelled) return;
+        if (r.status === "unauth") {
+          window.location.href = "/";
+          return;
+        }
+        if (r.status !== "ok") return;
+        const data = r.team;
         const completed: string[] = data.completedChallenges || [];
         if (!completed.includes("the-message")) {
           setCurrentStage("the-message");
@@ -35,6 +32,12 @@ export default function ArchivePage() {
           setCurrentStage("the-source");
         }
       });
+    run();
+    window.addEventListener("online", run);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", run);
+    };
   }, []);
 
   if (!currentStage) {
