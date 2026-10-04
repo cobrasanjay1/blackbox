@@ -3,13 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { CHALLENGES, TOTAL_CHALLENGES, type Challenge } from "@/lib/challenges";
-
-interface TeamState {
-  id: string;
-  name: string;
-  completedChallenges: string[];
-  hints: Record<string, number[]>;
-}
+import { fetchTeam, getToken, type TeamState } from "@/lib/teamClient";
 
 interface ChallengeFrameProps {
   challengeId: string;
@@ -26,7 +20,11 @@ export default function ChallengeFrame({
 }: ChallengeFrameProps) {
   const [team, setTeam] = useState<TeamState | null>(null);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswer] = useState(() => {
+    try {
+      return typeof window === "undefined" ? "" : sessionStorage.getItem(`bb_draft_${challengeId}`) ?? "";
+    } catch { return ""; }
+  });
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{
     type: "correct" | "wrong" | null;
@@ -37,54 +35,36 @@ export default function ChallengeFrame({
   const [allHintsRevealed, setAllHintsRevealed] = useState(false);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const router = useRouter();
-
-  const getToken = () => {
-    const cookie = document.cookie
-      .split("; ")
-      .find((r) => r.startsWith("team_token="))
-      ?.split("=")[1];
-    return cookie || localStorage.getItem("team_token") || "";
-  };
+  const [offline, setOffline] = useState(false);
+  const draftKey = `bb_draft_${challengeId}`;
 
   const loadTeam = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
+    const r = await fetchTeam();
+    if (r.status === "unauth") {
       router.push("/");
       return;
     }
+    if (r.status === "offline") {
+      setOffline(true);
+      return;
+    }
+    setOffline(false);
+    const data = r.team;
+    setTeam(data);
 
-    try {
-      const res = await fetch("/api/team", {
-        headers: { "x-team-token": token },
-      });
-      if (!res.ok) {
-        router.push("/");
-        return;
-      }
-      const data = await res.json();
-      setTeam(data);
+    if (data.completedChallenges.includes(challengeId)) {
+      setAlreadyCompleted(true);
+      setResult({ type: "correct", message: "This stage is already complete. Continue your investigation." });
+    }
 
-      // Check if this challenge is already done
-      if (data.completedChallenges.includes(challengeId)) {
-        setAlreadyCompleted(true);
-        setResult({ type: "correct", message: "This stage is already complete. Continue your investigation." });
+    const usedHintIndexes: number[] = data.hints[challengeId] || [];
+    if (usedHintIndexes.length > 0) {
+      const challengeData = CHALLENGES.find((c) => c.id === challengeId);
+      if (challengeData) {
+        const usedHints = usedHintIndexes.sort((a,b)=>a-b).map((i)=>challengeData.hints[i]).filter(Boolean);
+        setHints(usedHints);
+        setAllHintsRevealed(usedHintIndexes.length >= challengeData.hints.length);
       }
-
-      // Restore previously used hints
-      const usedHintIndexes: number[] = data.hints[challengeId] || [];
-      if (usedHintIndexes.length > 0) {
-        const challengeData = CHALLENGES.find((c) => c.id === challengeId);
-        if (challengeData) {
-          const usedHints = usedHintIndexes
-            .sort((a, b) => a - b)
-            .map((i) => challengeData.hints[i])
-            .filter(Boolean);
-          setHints(usedHints);
-          setAllHintsRevealed(usedHintIndexes.length >= challengeData.hints.length);
-        }
-      }
-    } catch {
-      router.push("/");
     }
   }, [challengeId, router]);
 
@@ -92,7 +72,13 @@ export default function ChallengeFrame({
     const c = CHALLENGES.find((ch) => ch.id === challengeId);
     setChallenge(c || null);
     loadTeam();
+    window.addEventListener("online", loadTeam);
+    return () => window.removeEventListener("online", loadTeam);
   }, [challengeId, loadTeam]);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(draftKey, answer); } catch {}
+  }, [answer, draftKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +93,7 @@ export default function ChallengeFrame({
         if (res.correct) {
           setResult({ type: "correct", message: res.message || "CLUE ACCEPTED. The trail continues..." });
           setAlreadyCompleted(true);
+          try { sessionStorage.removeItem(draftKey); } catch {}
           setTimeout(() => {
             const nextChallenge = CHALLENGES.find((c) => c.order === (challenge?.order ?? 0) + 1);
             if (nextChallenge) {
@@ -126,7 +113,7 @@ export default function ChallengeFrame({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-team-token": token,
+          ...(token ? { "x-team-token": token } : {}),
         },
         body: JSON.stringify({ challengeId, answer: answer.trim() }),
       });
@@ -141,6 +128,7 @@ export default function ChallengeFrame({
       if (data.correct) {
         setResult({ type: "correct", message: "✓ CLUE ACCEPTED — The trail continues..." });
         setAlreadyCompleted(true);
+        try { sessionStorage.removeItem(draftKey); } catch {}
         setTimeout(() => {
           if (data.gameComplete) {
             router.push("/victory");
@@ -157,7 +145,7 @@ export default function ChallengeFrame({
         });
       }
     } catch {
-      setResult({ type: "wrong", message: "Connection error. Please try again." });
+      setResult({ type: "wrong", message: "Connection error. Your answer is kept, try again." });
     } finally {
       setSubmitting(false);
     }
@@ -189,6 +177,15 @@ export default function ChallengeFrame({
       setHintLoading(false);
     }
   };
+
+  if (offline && !team) {
+    return (
+      <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",gap:"16px",alignItems:"center",justifyContent:"center"}}>
+        <div className="mono" style={{color:"var(--accent-red)",fontSize:"0.9rem",letterSpacing:"0.1em"}}>CONNECTION LOST. YOUR PROGRESS IS SAFE.</div>
+        <button className="btn-ghost" onClick={loadTeam}>[ RETRY ]</button>
+      </div>
+    );
+  }
 
   if (!challenge || !team) {
     return (
@@ -264,6 +261,12 @@ export default function ChallengeFrame({
           >
             {team.name}
           </div>
+
+          {team.code && (
+            <div className="mono" title="Share this code with teammates so they can rejoin" style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.12em" }}>
+              CODE {team.code}
+            </div>
+          )}
         </div>
       </header>
 
