@@ -6,6 +6,7 @@
 // Then player must change ?file=missing to ?file=recovered
 
 import ChallengeFrame from "@/components/ChallengeFrame";
+import { fetchTeam } from "@/lib/teamClient";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -19,20 +20,16 @@ function SignalContent() {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    const getToken = () => {
-      const cookie = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith("team_token="))
-        ?.split("=")[1];
-      return cookie || localStorage.getItem("team_token") || "";
-    };
-
-    const token = getToken();
-    if (!token) return;
-
-    fetch("/api/team", { headers: { "x-team-token": token } })
-      .then((r) => r.json())
-      .then((data) => {
+    let cancelled = false;
+    const run = () =>
+      fetchTeam().then((r) => {
+        if (cancelled) return;
+        if (r.status === "unauth") {
+          window.location.href = "/";
+          return;
+        }
+        if (r.status !== "ok") return;
+        const data = r.team;
         const completed: string[] = data.completedChallenges || [];
         if (!completed.includes("the-signal")) {
           setCurrentStage("the-signal");
@@ -40,6 +37,12 @@ function SignalContent() {
           setCurrentStage("the-parameter");
         }
       });
+    run();
+    window.addEventListener("online", run);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", run);
+    };
   }, []);
 
   if (!currentStage) {
@@ -128,7 +131,7 @@ function SignalContent() {
                 DECODED: &quot;The parameter is your key.&quot;
                 <br />
                 <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                  Now submit the last word of this message.
+                  Now submit the key word from this message.
                 </span>
               </div>
             )}
