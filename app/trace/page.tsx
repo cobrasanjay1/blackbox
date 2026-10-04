@@ -4,44 +4,43 @@
 // Stage 7: THE SCRIPT — JS variable in console/source
 
 import ChallengeFrame from "@/components/ChallengeFrame";
+import { fetchTeam } from "@/lib/teamClient";
 import { useEffect, useState } from "react";
 
 export default function TracePage() {
   const [currentStage, setCurrentStage] = useState<string | null>(null);
 
   useEffect(() => {
-    const getToken = () => {
-      const cookie = document.cookie
-        .split("; ")
-        .find((r) => r.startsWith("team_token="))
-        ?.split("=")[1];
-      return cookie || localStorage.getItem("team_token") || "";
-    };
-
-    const token = getToken();
-    if (!token) return;
-
-    // Set the stage-specific cookie clue
-    document.cookie = "clue=look_deeper; path=/; SameSite=Strict";
-
-    // Set localStorage clue
-    localStorage.setItem("null_message", "the_trace");
-    localStorage.setItem(
-      "_null_note",
-      "The trace you're looking for is right here. Key: null_message"
-    );
-
-    fetch("/api/team", { headers: { "x-team-token": token } })
-      .then((r) => r.json())
-      .then((data) => {
+    let cancelled = false;
+    const run = () => {
+      document.cookie = "clue=look_deeper; path=/; SameSite=Strict";
+      localStorage.setItem("null_message", "the_trace");
+      localStorage.setItem(
+        "_null_note",
+        "The trace you're looking for is right here. Key: null_message"
+      );
+      return fetchTeam().then((r) => {
+        if (cancelled) return;
+        if (r.status === "unauth") {
+          window.location.href = "/";
+          return;
+        }
+        if (r.status !== "ok") return;
+        const data = r.team;
         const completed: string[] = data.completedChallenges || [];
         if (!completed.includes("the-memory")) {
           setCurrentStage("the-memory");
         } else {
           setCurrentStage("the-script");
-          // Set the JS variable for stage 7
         }
       });
+    };
+    run();
+    window.addEventListener("online", run);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", run);
+    };
   }, []);
 
   // Stage 7 JS variable — exposed on window
