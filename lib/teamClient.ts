@@ -2,6 +2,7 @@ export type TeamState = {
   id: string;
   name: string;
   code?: string | null;
+  completedAt?: string | null;
   completedChallenges: string[];
   hints: Record<string, number[]>;
 };
